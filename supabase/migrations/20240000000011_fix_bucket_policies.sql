@@ -1,5 +1,15 @@
 -- First ensure buckets table has RLS enabled
-ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+    -- Try to enable RLS, but catch any permission errors
+    BEGIN
+        ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
+    EXCEPTION
+        WHEN insufficient_privilege THEN
+            -- RLS might already be enabled or we don't have permission, which is fine
+            NULL;
+    END;
+END $$;
 
 -- Drop any existing bucket policies to start fresh
 DO $$

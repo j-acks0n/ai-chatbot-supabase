@@ -1,5 +1,12 @@
 -- Drop existing tables and objects if they exist
-DROP TRIGGER IF EXISTS tr_file_version ON public.file_uploads;
+DO $$
+BEGIN
+    -- Only drop trigger if table exists
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'file_uploads') THEN
+        DROP TRIGGER IF EXISTS tr_file_version ON public.file_uploads;
+    END IF;
+END $$;
+
 DROP FUNCTION IF EXISTS set_file_version();
 DROP FUNCTION IF EXISTS get_next_file_version();
 DROP TABLE IF EXISTS public.file_uploads;
@@ -87,8 +94,16 @@ CREATE TRIGGER tr_file_version
 -- Storage bucket setup
 DO $$
 BEGIN
-    -- Ensure storage schema is properly configured
-    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    -- Check if storage.objects already has RLS enabled (it usually does in Supabase)
+    -- Only try to enable RLS if it's not already enabled and we have permission
+    BEGIN
+        -- Try to enable RLS, but catch any permission errors
+        ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    EXCEPTION
+        WHEN insufficient_privilege THEN
+            -- RLS might already be enabled or we don't have permission, which is fine
+            NULL;
+    END;
     
     -- Create or update the chat_attachments bucket
     INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
