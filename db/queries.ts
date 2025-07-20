@@ -384,9 +384,19 @@ export async function createMemoryProfileQuery(
 }
 
 export async function getUserMemoryProfilesQuery(client: Client) {
+  const {
+    data: { user },
+    error: userError,
+  } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error('User must be authenticated');
+  }
+
   const { data, error } = await client
     .from('memory_profiles')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -403,12 +413,7 @@ export async function getMemoryProfileByIdQuery(
     .eq('id', profileId)
     .single();
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
-    throw error;
-  }
+  if (error) throw error;
   return data;
 }
 
