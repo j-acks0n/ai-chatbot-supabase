@@ -20,9 +20,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Chat } from '@/lib/supabase/types';
 
 import { MoreHorizontalIcon, TrashIcon } from './icons';
+
+import type { Database } from '@/lib/supabase/types';
+
+type Chat = Database['public']['Tables']['chats']['Row'];
 
 type GroupedChats = {
   today: Chat[];

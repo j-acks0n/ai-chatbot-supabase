@@ -10,8 +10,8 @@ import { z } from 'zod';
 
 import { customModel } from '@/ai';
 import { models } from '@/ai/models';
-import { blocksPrompt, regularPrompt, systemPrompt } from '@/ai/prompts';
-import { getChatById, getDocumentById, getSession } from '@/db/cached-queries';
+import { systemPrompt } from '@/ai/prompts';
+import { getChatById, getDocumentById } from '@/db/cached-queries';
 import {
   saveChat,
   saveDocument,
@@ -19,8 +19,16 @@ import {
   saveSuggestions,
   deleteChatById,
 } from '@/db/mutations';
+// eslint-disable-next-line import/order
 import { createClient } from '@/lib/supabase/server';
-import { MessageRole } from '@/lib/supabase/types';
+
+type MessageRole =
+  | 'user'
+  | 'assistant'
+  | 'system'
+  | 'function'
+  | 'data'
+  | 'tool';
 import {
   generateUUID,
   getMostRecentUserMessage,
@@ -153,10 +161,9 @@ export async function POST(request: Request) {
       messages: [
         {
           id: generateUUID(),
-          chat_id: id,
-          role: userMessage.role as MessageRole,
+          role: userMessage.role,
           content: formatMessageContent(userMessage),
-          created_at: new Date().toISOString(),
+          createdAt: new Date(),
         },
       ],
     });
@@ -507,10 +514,9 @@ export async function POST(request: Request) {
         messages: [
           {
             id: generateUUID(),
-            chat_id: id,
-            role: userMessage.role as MessageRole,
+            role: userMessage.role,
             content: formatMessageContent(userMessage),
-            created_at: new Date().toISOString(),
+            createdAt: new Date(),
           },
         ],
       });

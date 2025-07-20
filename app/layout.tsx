@@ -6,9 +6,10 @@ import { ThemeProvider } from '@/components/custom/theme-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Next.js Chatbot Template',
-  description: 'Next.js chatbot template using the AI SDK.',
+  metadataBase: new URL('https://inlovingmemory.app'),
+  title: 'InLovingMemory - Connect with Your Loved Ones',
+  description:
+    'Create digital memories of your loved ones from your WhatsApp conversations. Talk to their memory using AI trained on their communication style.',
 };
 
 export const viewport = {

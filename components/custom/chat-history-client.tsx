@@ -5,9 +5,12 @@ import { memo } from 'react';
 import useSWR from 'swr';
 
 import { useSidebar } from '@/components/ui/sidebar';
-import { Chat } from '@/lib/supabase/types';
 
 import { GroupedChatList } from './chat-history-grouped-list';
+
+import type { Database } from '@/lib/supabase/types';
+
+type Chat = Database['public']['Tables']['chats']['Row'];
 
 export function ChatHistoryClient({
   initialChats,

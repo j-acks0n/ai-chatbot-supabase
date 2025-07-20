@@ -34,7 +34,11 @@ import { VersionFooter } from './version-footer';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
-import type { Document, Suggestion, Vote } from '@/lib/supabase/types';
+import type { Database } from '@/lib/supabase/types';
+
+type Document = Database['public']['Tables']['documents']['Row'];
+type Suggestion = Database['public']['Tables']['suggestions']['Row'];
+type Vote = Database['public']['Tables']['votes']['Row'];
 
 export interface UIBlock {
   title: string;

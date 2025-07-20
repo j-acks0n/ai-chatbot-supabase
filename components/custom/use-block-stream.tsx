@@ -2,8 +2,11 @@ import { JSONValue } from 'ai';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
 
-import { Suggestion } from '@/lib/supabase/types';
+import type { Database } from '@/lib/supabase/types';
 
+type Suggestion = Database['public']['Tables']['suggestions']['Row'];
+
+// eslint-disable-next-line import/order
 import { UIBlock } from './block';
 
 type StreamingDelta = {

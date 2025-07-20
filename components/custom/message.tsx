@@ -5,7 +5,7 @@ import cx from 'classnames';
 import { motion } from 'framer-motion';
 import { Dispatch, SetStateAction } from 'react';
 
-import { Vote } from '@/lib/supabase/types';
+type Vote = Database['public']['Tables']['votes']['Row'];
 
 import { UIBlock } from './block';
 import { DocumentToolCall, DocumentToolResult } from './document';
@@ -14,6 +14,8 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
+
+import type { Database } from '@/lib/supabase/types';
 
 export const PreviewMessage = ({
   chatId,

@@ -1,11 +1,14 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { revalidateTag } from 'next/cache';
+
 import { createClient } from '@/lib/supabase/server';
-import {
-  handleDatabaseError,
-  PostgrestError,
-  type Client,
-  type Message,
-} from '@/lib/supabase/types';
+
+import { handleSupabaseError } from './queries';
+
+import type { Database } from '@/lib/supabase/types';
+import type { Message } from 'ai';
+
+type Client = SupabaseClient<Database>;
 
 const getSupabase = async () => createClient();
 
@@ -19,7 +22,7 @@ async function mutateQuery<T extends any[]>(
     await queryFn(supabase, ...args);
     tags.forEach((tag) => revalidateTag(tag));
   } catch (error) {
-    handleDatabaseError(error as PostgrestError);
+    handleSupabaseError(error as any);
   }
 }
 
@@ -103,7 +106,9 @@ export async function saveMessages({
           chat_id: chatId,
           role: message.role,
           content: content,
-          created_at: message.created_at || new Date().toISOString(),
+          created_at: message.createdAt
+            ? new Date(message.createdAt).toISOString()
+            : new Date().toISOString(),
         };
       });
 

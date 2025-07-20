@@ -21,7 +21,10 @@ import {
   suggestionsPlugin,
   suggestionsPluginKey,
 } from '@/lib/editor/suggestions';
-import { Suggestion } from '@/lib/supabase/types';
+
+import type { Database } from '@/lib/supabase/types';
+
+type Suggestion = Database['public']['Tables']['suggestions']['Row'];
 
 type EditorProps = {
   content: string;

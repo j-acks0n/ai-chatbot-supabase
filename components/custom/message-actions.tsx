@@ -3,7 +3,10 @@ import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
 
-import { Vote } from '@/lib/supabase/types';
+// eslint-disable-next-line import/order
+import type { Database } from '@/lib/supabase/types';
+
+type Vote = Database['public']['Tables']['votes']['Row'];
 import { getMessageIdFromAnnotations } from '@/lib/utils';
 
 import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';

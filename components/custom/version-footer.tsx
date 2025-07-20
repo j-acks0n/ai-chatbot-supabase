@@ -6,12 +6,14 @@ import { useState } from 'react';
 import { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 
-import { Document } from '@/lib/supabase/types';
+type Document = Database['public']['Tables']['documents']['Row'];
 import { getDocumentTimestampByIndex } from '@/lib/utils';
 
 import { UIBlock } from './block';
 import { LoaderIcon } from './icons';
 import { Button } from '../ui/button';
+
+import type { Database } from '@/lib/supabase/types';
 
 interface VersionFooterProps {
   block: UIBlock;
