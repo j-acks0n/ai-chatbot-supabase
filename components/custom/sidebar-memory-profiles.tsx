@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import useSWR from 'swr';
 
-import { Heart } from 'lucide-react';
+import { Heart, Plus, User as UserIcon } from 'lucide-react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -62,18 +62,28 @@ const MemoryProfileItem = ({
   setOpenMobile: (open: boolean) => void;
 }) => (
   <SidebarMenuItem>
-    <SidebarMenuButton asChild isActive={isActive}>
+    <SidebarMenuButton asChild isActive={isActive} className="h-10 px-3">
       <Link
         href={`/memories/${profile.id}`}
         onClick={() => setOpenMobile(false)}
       >
-        <Heart className="size-4 text-purple-600" />
-        <span>{profile.name}</span>
-        {profile.relationship && (
-          <span className="text-xs text-muted-foreground ml-auto">
-            {profile.relationship}
-          </span>
-        )}
+        <div className="flex items-center space-x-3 w-full min-w-0">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+              <Heart className="w-4 h-4 text-purple-600" />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm text-gray-900 truncate">
+              {profile.name}
+            </p>
+            {profile.relationship && (
+              <p className="text-xs text-gray-500 truncate">
+                {profile.relationship}
+              </p>
+            )}
+          </div>
+        </div>
       </Link>
     </SidebarMenuButton>
   </SidebarMenuItem>
@@ -103,10 +113,17 @@ export function SidebarMemoryProfiles({ user }: { user: User | undefined }) {
   if (!user) {
     return (
       <SidebarGroup>
-        <SidebarGroupLabel>Memory Profiles</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
+          Memory Profiles
+        </SidebarGroupLabel>
         <SidebarGroupContent>
-          <div className="text-zinc-500 w-full flex flex-row justify-center items-center text-sm gap-2 p-2">
-            <div>Login to see your memory profiles!</div>
+          <div className="px-3 py-4">
+            <div className="text-center space-y-2">
+              <UserIcon className="w-8 h-8 text-gray-300 mx-auto" />
+              <p className="text-sm text-gray-500">
+                Login to see your memory profiles
+              </p>
+            </div>
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -116,16 +133,18 @@ export function SidebarMemoryProfiles({ user }: { user: User | undefined }) {
   if (isLoading) {
     return (
       <SidebarGroup>
-        <SidebarGroupLabel>Memory Profiles</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
+          Memory Profiles
+        </SidebarGroupLabel>
         <SidebarGroupContent>
-          <div className="flex flex-col">
+          <div className="px-3 py-2 space-y-3">
             {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="rounded-md h-8 flex gap-2 px-2 items-center"
-              >
-                <div className="h-4 w-4 rounded-full bg-sidebar-accent-foreground/10 animate-pulse" />
-                <div className="h-4 rounded-md flex-1 max-w-[60%] bg-sidebar-accent-foreground/10 animate-pulse" />
+              <div key={item} className="flex items-center space-x-3 h-10">
+                <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+                <div className="flex-1 space-y-1">
+                  <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-2 bg-gray-200 rounded w-2/3 animate-pulse" />
+                </div>
               </div>
             ))}
           </div>
@@ -137,19 +156,33 @@ export function SidebarMemoryProfiles({ user }: { user: User | undefined }) {
   if (profiles?.length === 0) {
     return (
       <SidebarGroup>
-        <SidebarGroupLabel>Memory Profiles</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
+          Memory Profiles
+        </SidebarGroupLabel>
         <SidebarGroupContent>
-          <div className="text-zinc-500 w-full flex flex-col justify-center items-center text-sm gap-2 p-2">
-            <div className="text-center">
-              Your loved ones will appear here once you upload WhatsApp chats!
+          <div className="px-3 py-4">
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto">
+                <Heart className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600 font-medium">
+                  No memories yet
+                </p>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Upload WhatsApp chats to create memory profiles of your loved
+                  ones
+                </p>
+              </div>
+              <Link
+                href="/"
+                className="inline-flex items-center space-x-2 text-xs text-purple-600 hover:text-purple-700 font-medium group"
+                onClick={() => setOpenMobile(false)}
+              >
+                <Plus className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                <span>Create Memory</span>
+              </Link>
             </div>
-            <Link
-              href="/"
-              className="text-purple-600 hover:text-purple-700 text-xs underline"
-              onClick={() => setOpenMobile(false)}
-            >
-              Upload WhatsApp Chat
-            </Link>
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -158,9 +191,11 @@ export function SidebarMemoryProfiles({ user }: { user: User | undefined }) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Memory Profiles</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">
+        Memory Profiles
+      </SidebarGroupLabel>
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="space-y-1 px-1">
           {profiles?.map((profile) => (
             <MemoryProfileItem
               key={profile.id}
@@ -170,6 +205,16 @@ export function SidebarMemoryProfiles({ user }: { user: User | undefined }) {
             />
           ))}
         </SidebarMenu>
+        <div className="px-3 pt-2 pb-1">
+          <Link
+            href="/"
+            className="flex items-center space-x-2 text-xs text-gray-500 hover:text-purple-600 py-2 group transition-colors"
+            onClick={() => setOpenMobile(false)}
+          >
+            <Plus className="w-3 h-3 group-hover:scale-110 transition-transform" />
+            <span>Add new memory</span>
+          </Link>
+        </div>
       </SidebarGroupContent>
     </SidebarGroup>
   );

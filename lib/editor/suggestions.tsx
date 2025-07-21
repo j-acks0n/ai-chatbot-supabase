@@ -6,6 +6,7 @@ import { Decoration, DecorationSet, EditorView } from 'prosemirror-view';
 import { createRoot } from 'react-dom/client';
 
 import { Suggestion as PreviewSuggestion } from '@/components/custom/suggestion';
+
 import type { Database } from '@/lib/supabase/types';
 
 type Suggestion = Database['public']['Tables']['suggestions']['Row'];

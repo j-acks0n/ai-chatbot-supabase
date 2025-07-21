@@ -1,7 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import {
+  Upload,
+  Users,
+  Heart,
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState, useCallback } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,7 +21,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -20,13 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { WhatsAppParser } from '@/lib/whatsapp-parser';
+import { Textarea } from '@/components/ui/textarea';
 import {
   createMemoryProfileQuery,
   saveTrainingMessagesQuery,
 } from '@/db/queries';
 import { createClient } from '@/lib/supabase/client';
-import { Upload, Users, Heart, AlertCircle } from 'lucide-react';
+import { WhatsAppParser } from '@/lib/whatsapp-parser';
 
 interface ParsedChatData {
   messages: any[];
@@ -157,170 +165,261 @@ export function WhatsAppUpload() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div className="text-center space-y-2">
-        <div className="flex items-center justify-center space-x-2 text-2xl font-bold text-purple-600">
-          <Heart className="w-8 h-8" />
-          <span>InLovingMemory</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="max-w-3xl mx-auto px-6 py-12 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg">
+            <Heart className="size-8" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              InLovingMemory
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Create a digital memory of your loved one from your WhatsApp
+              conversations. Our AI will learn their unique communication style
+              to help you feel closer to them.
+            </p>
+          </div>
         </div>
-        <p className="text-gray-600">
-          Create a digital memory of your loved one from your WhatsApp
-          conversations
-        </p>
-      </div>
 
-      {/* File Upload Step */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Upload className="w-5 h-5" />
-            <span>Step 1: Upload WhatsApp Export</span>
-          </CardTitle>
-          <CardDescription>
-            Export your WhatsApp chat and upload the .txt file here
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="file-upload">WhatsApp Export File (.txt)</Label>
-              <Input
-                id="file-upload"
-                type="file"
-                accept=".txt"
-                onChange={handleFileUpload}
-                disabled={isLoading}
-              />
-            </div>
-
-            {parsedData && (
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center space-x-2 text-green-700">
-                  <Users className="w-4 h-4" />
-                  <span className="font-medium">File parsed successfully!</span>
+        {/* Steps */}
+        <div className="space-y-6">
+          {/* File Upload Step */}
+          <Card className="border-0 shadow-lg ring-1 ring-gray-200/50">
+            <CardHeader className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center size-8 rounded-full bg-blue-100 text-blue-600">
+                  <span className="text-sm font-semibold">1</span>
                 </div>
-                <p className="text-sm text-green-600 mt-1">
-                  Found {parsedData.messages.length} messages from{' '}
-                  {parsedData.participants.length} participants
-                </p>
+                <CardTitle className="text-xl font-semibold text-gray-900">
+                  Upload WhatsApp Export
+                </CardTitle>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Person Selection Step */}
-      {parsedData && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="w-5 h-5" />
-              <span>Step 2: Choose Your Loved One</span>
-            </CardTitle>
-            <CardDescription>
-              Select the person whose memory you want to create
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="person-select">Person</Label>
-              <Select value={selectedPerson} onValueChange={setSelectedPerson}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a person from the chat" />
-                </SelectTrigger>
-                <SelectContent>
-                  {parsedData.participants.map((participant) => (
-                    <SelectItem key={participant} value={participant}>
-                      {participant} ({parsedData.messageCount[participant]}{' '}
-                      messages)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedPerson && (
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-700">
-                  <strong>{selectedPerson}</strong> sent{' '}
-                  {parsedData.messageCount[selectedPerson]} messages in this
-                  conversation.
-                </p>
+              <CardDescription className="text-gray-600">
+                Export your WhatsApp chat as a text file and upload it here to
+                begin
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="file-upload"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  WhatsApp Export File (.txt)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    accept=".txt"
+                    onChange={handleFileUpload}
+                    disabled={isLoading}
+                    className="cursor-pointer  file:mr-4  file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                  />
+                  <FileText className="absolute right-3 top-3 size-4 text-gray-400 pointer-events-none" />
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Memory Details Step */}
-      {selectedPerson && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Heart className="w-5 h-5" />
-              <span>Step 3: Memory Details</span>
-            </CardTitle>
-            <CardDescription>Tell us about your loved one</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="memory-name">Memory Name *</Label>
-              <Input
-                id="memory-name"
-                placeholder="e.g., Dad, Mom, Sarah, etc."
-                value={memoryName}
-                onChange={(e) => setMemoryName(e.target.value)}
-              />
-            </div>
+              {parsedData && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                  <div className="flex items-center space-x-2 text-green-800">
+                    <CheckCircle2 className="size-5" />
+                    <span className="font-medium">
+                      File processed successfully!
+                    </span>
+                  </div>
+                  <p className="text-sm text-green-700 mt-2">
+                    Found {parsedData.messages.length.toLocaleString()} messages
+                    from {parsedData.participants.length} participants
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label htmlFor="relationship">Relationship</Label>
-              <Select value={relationship} onValueChange={setRelationship}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select relationship" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="parent">Parent</SelectItem>
-                  <SelectItem value="partner">Partner</SelectItem>
-                  <SelectItem value="sibling">Sibling</SelectItem>
-                  <SelectItem value="friend">Friend</SelectItem>
-                  <SelectItem value="grandparent">Grandparent</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Person Selection Step */}
+          {parsedData && (
+            <Card className="border-0 shadow-lg ring-1 ring-gray-200/50">
+              <CardHeader className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center size-8 rounded-full bg-purple-100 text-purple-600">
+                    <span className="text-sm font-semibold">2</span>
+                  </div>
+                  <CardTitle className="text-xl font-semibold text-gray-900">
+                    Choose Your Loved One
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-gray-600">
+                  Select the person whose memory you want to create from the
+                  conversation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="person-select"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Person
+                  </Label>
+                  <Select
+                    value={selectedPerson}
+                    onValueChange={setSelectedPerson}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select a person from the chat" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parsedData.participants.map((participant) => (
+                        <SelectItem key={participant} value={participant}>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium">{participant}</span>
+                            <span className="text-sm text-gray-500 ml-4">
+                              {parsedData.messageCount[
+                                participant
+                              ].toLocaleString()}{' '}
+                              messages
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div>
-              <Label htmlFor="memory-description">Description (Optional)</Label>
-              <Textarea
-                id="memory-description"
-                placeholder="Share a few words about this person..."
-                value={memoryDescription}
-                onChange={(e) => setMemoryDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
+                {selectedPerson && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-sm text-blue-800">
+                      <span className="font-semibold">{selectedPerson}</span>{' '}
+                      sent{' '}
+                      {parsedData.messageCount[selectedPerson].toLocaleString()}{' '}
+                      messages in this conversation. We&apos;ll analyze their
+                      communication style to create an authentic memory.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-            <Button
-              onClick={handleCreateMemory}
-              disabled={isLoading || !memoryName}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              {isLoading ? 'Creating Memory...' : 'Create Memory'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+          {/* Memory Details Step */}
+          {selectedPerson && (
+            <Card className="border-0 shadow-lg ring-1 ring-gray-200/50">
+              <CardHeader className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center size-8 rounded-full bg-pink-100 text-pink-600">
+                    <span className="text-sm font-semibold">3</span>
+                  </div>
+                  <CardTitle className="text-xl font-semibold text-gray-900">
+                    Memory Details
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-gray-600">
+                  Tell us about your loved one to personalize their memory
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="memory-name"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Memory Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="memory-name"
+                      placeholder="e.g., Dad, Mom, Sarah, etc."
+                      value={memoryName}
+                      onChange={(e) => setMemoryName(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-          <div className="flex items-center space-x-2 text-red-700">
-            <AlertCircle className="w-4 h-4" />
-            <span className="font-medium">Error</span>
-          </div>
-          <p className="text-sm text-red-600 mt-1">{error}</p>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="relationship"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Relationship
+                    </Label>
+                    <Select
+                      value={relationship}
+                      onValueChange={setRelationship}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select relationship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="partner">Partner</SelectItem>
+                        <SelectItem value="sibling">Sibling</SelectItem>
+                        <SelectItem value="friend">Friend</SelectItem>
+                        <SelectItem value="grandparent">Grandparent</SelectItem>
+                        <SelectItem value="child">Child</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="memory-description"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Description (Optional)
+                  </Label>
+                  <Textarea
+                    id="memory-description"
+                    placeholder="Share a few words about this person and what made them special..."
+                    value={memoryDescription}
+                    onChange={(e) => setMemoryDescription(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleCreateMemory}
+                  disabled={isLoading || !memoryName}
+                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Creating Memory...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Heart className="size-4" />
+                      <span>Create Memory</span>
+                    </div>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
+
+        {/* Error Display */}
+        {error && (
+          <Card className="border-0 shadow-lg ring-1 ring-red-200/50 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2 text-red-800">
+                <AlertCircle className="size-5 shrink-0" />
+                <div>
+                  <p className="font-medium">Error</p>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

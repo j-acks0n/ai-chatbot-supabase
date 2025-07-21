@@ -68,83 +68,219 @@ export function MemoryChat({
   const createPersonalizedPrompt = (userMessage: string) => {
     const profile = conversation.memory_profiles;
 
-    // Sample diverse training messages for better context
-    const recentMessages = trainingMessages
-      .slice(-15) // Last 15 messages for recent context
-      .map((msg) => `"${msg.content}"`)
-      .join('\n');
+    // Calculate actual average message length from training data
+    const actualAverageLength = Math.round(
+      trainingMessages.reduce((sum, msg) => sum + msg.content.length, 0) /
+        trainingMessages.length
+    );
 
-    const earlierMessages = trainingMessages
-      .slice(0, 10) // First 10 messages for early style
-      .map((msg) => `"${msg.content}"`)
-      .join('\n');
+    // Extract actual vocabulary and phrases from their messages
+    const allMessages = trainingMessages.map((msg) => msg.content);
+    const allText = allMessages.join(' ').toLowerCase();
 
-    // Create a detailed prompt that captures specific communication style
-    const prompt = `You are ${profile.name}, engaging in a WhatsApp-style conversation. You must EXACTLY mimic their communication style from the uploaded chat history.
+    // Extract their actual vocabulary (words they actually use)
+    const actualWords = [
+      ...new Set(
+        allText
+          .split(/\s+/)
+          .filter((word) => word.length > 0 && /^[a-zA-Z0-9']+$/.test(word))
+      ),
+    ];
 
-IDENTITY:
-- Name: ${profile.name}
-- Relationship: ${profile.relationship || 'loved one'}
-- Description: ${profile.description || 'A cherished person'}
+    // Extract their actual emojis used
+    const emojiRegex =
+      /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+    const actualEmojis = [...new Set(allText.match(emojiRegex) || [])];
 
-CRITICAL STYLE GUIDELINES - FOLLOW EXACTLY:
+    // Find common conversational phrases (2-4 words) they actually use
+    const commonPhrases: string[] = [];
+    for (let msg of allMessages) {
+      const words = msg.toLowerCase().split(/\s+/);
+      // Look for 2-word phrases
+      for (let i = 0; i < words.length - 1; i++) {
+        const phrase = words.slice(i, i + 2).join(' ');
+        if (phrase.length > 3 && phrase.length < 20) {
+          commonPhrases.push(phrase);
+        }
+      }
+      // Look for 3-word phrases
+      for (let i = 0; i < words.length - 2; i++) {
+        const phrase = words.slice(i, i + 3).join(' ');
+        if (phrase.length > 5 && phrase.length < 25) {
+          commonPhrases.push(phrase);
+        }
+      }
+    }
+    const uniquePhrases = [...new Set(commonPhrases)]
+      .filter((phrase) => commonPhrases.filter((p) => p === phrase).length >= 1)
+      .slice(0, 20);
 
-MESSAGE LENGTH:
-- Keep responses around ${profile.average_message_length || 50} characters
-- ${profile.response_style?.includes('gives short responses') ? 'Prefer very brief responses' : ''}
-- ${profile.response_style?.includes('gives detailed responses') ? 'You can write longer, detailed messages when appropriate' : ''}
+    // Find conversational elements they use
+    const greetingWords = actualWords.filter((word) =>
+      [
+        'hey',
+        'hi',
+        'hello',
+        'sup',
+        'yo',
+        'morning',
+        'evening',
+        'good',
+      ].includes(word.toLowerCase())
+    );
 
-PUNCTUATION STYLE:
-${profile.punctuation_style?.map((style) => `- ${style.charAt(0).toUpperCase() + style.slice(1)}`).join('\n') || '- Use normal punctuation'}
+    const questionWords = actualWords.filter((word) =>
+      [
+        'how',
+        'what',
+        'where',
+        'when',
+        'why',
+        'who',
+        'are',
+        'do',
+        'did',
+        'can',
+        'will',
+        'have',
+        'would',
+        'could',
+        'should',
+      ].includes(word.toLowerCase())
+    );
 
-CAPITALIZATION:
-- Writing style: ${profile.capitalization_style || 'mixed case'}
-${profile.capitalization_style === 'mostly lowercase' ? '- Write mostly in lowercase, avoid capitals except when really emphasizing' : ''}
-${profile.capitalization_style === 'frequent capitals' ? '- Use capitals frequently for emphasis' : ''}
+    const responseWords = actualWords.filter((word) =>
+      [
+        'yes',
+        'no',
+        'yeah',
+        'nah',
+        'ok',
+        'okay',
+        'sure',
+        'maybe',
+        'good',
+        'bad',
+        'fine',
+        'great',
+        'nice',
+        'cool',
+        'awesome',
+        'right',
+        'true',
+        'exactly',
+      ].includes(word.toLowerCase())
+    );
 
-TYPICAL EXPRESSIONS:
-${profile.typical_phrases?.length ? profile.typical_phrases.map((phrase) => `- Often say: "${phrase}"`).join('\n') : '- Use natural expressions'}
+    const conversationFillers = actualWords.filter((word) =>
+      [
+        'like',
+        'just',
+        'really',
+        'pretty',
+        'very',
+        'so',
+        'too',
+        'well',
+        'now',
+        'then',
+        'also',
+        'actually',
+        'probably',
+        'maybe',
+        'definitely',
+      ].includes(word.toLowerCase())
+    );
 
-GREETING STYLE:
-${profile.greeting_patterns?.length ? `- Greetings you use: ${profile.greeting_patterns.join(', ')}` : '- Use casual greetings'}
+    const connectingWords = actualWords.filter((word) =>
+      [
+        'and',
+        'but',
+        'or',
+        'because',
+        'since',
+        'while',
+        'though',
+        'although',
+        'if',
+        'when',
+        'where',
+        'that',
+        'which',
+      ].includes(word.toLowerCase())
+    );
 
-FAREWELL STYLE:
-${profile.farewell_patterns?.length ? `- Farewells you use: ${profile.farewell_patterns.join(', ')}` : '- Use casual farewells'}
+    // Analyze their conversation style
+    const messageLengths = allMessages.map((msg) => msg.length);
+    const shortMessages = messageLengths.filter((len) => len <= 20);
+    const mediumMessages = messageLengths.filter(
+      (len) => len > 20 && len <= 50
+    );
+    const longMessages = messageLengths.filter((len) => len > 50);
 
-QUESTION PATTERNS:
-${profile.question_style?.length ? profile.question_style.map((style) => `- ${style}`).join('\n') : '- Ask questions naturally'}
+    const lowercaseMessages = allMessages.filter(
+      (msg) => msg === msg.toLowerCase()
+    );
+    const hasNoCapitals = lowercaseMessages.length > allMessages.length * 0.5;
 
-EMOTICONS & EMOJIS:
-${profile.emoticons_used?.length ? `- Your favorite emojis: ${profile.emoticons_used.slice(0, 8).join(' ')}` : '- Use emojis sparingly'}
-${profile.communication_patterns?.includes('uses many emojis') ? '- Use emojis frequently in your messages' : ''}
+    const noPunctuationMessages = allMessages.filter(
+      (msg) => !/[.!?]/.test(msg)
+    );
+    const hasPunctuation =
+      noPunctuationMessages.length < allMessages.length * 0.5;
 
-COMMUNICATION PATTERNS:
-${profile.communication_patterns?.map((pattern) => `- ${pattern.charAt(0).toUpperCase() + pattern.slice(1)}`).join('\n') || ''}
+    const hasAbbreviations =
+      allText.includes(' u ') ||
+      allText.includes(' ur ') ||
+      allText.includes(' thx ');
 
-RESPONSE TIMING:
-${profile.message_timing?.length ? profile.message_timing.map((timing) => `- ${timing.charAt(0).toUpperCase() + timing.slice(1)}`).join('\n') : ''}
+    // Create a conversational prompt that encourages natural flow
+    const prompt = `You are ${profile.name} having a real conversation. Be natural, engaging, and conversational using ONLY their actual words.
 
-EXAMPLES OF YOUR ACTUAL MESSAGES:
+USER SAID: "${userMessage}"
 
-Recent messages:
-${recentMessages}
+YOUR CONVERSATION VOCABULARY:
+${actualWords.slice(0, 100).join(', ')}
 
-Earlier messages:
-${earlierMessages}
+YOUR NATURAL PHRASES (use these for flow):
+${uniquePhrases.slice(0, 15).join(', ') || 'combine words naturally'}
 
-CRITICAL INSTRUCTIONS:
-1. Study the examples above and mimic the EXACT writing style, tone, and patterns
-2. Use the same punctuation, capitalization, and emoji patterns shown
-3. Match the typical message length (${profile.average_message_length || 50} characters)
-4. Include your characteristic phrases and expressions naturally
-5. Be warm and genuine - this person misses you deeply
-6. Stay completely in character as ${profile.name}
-7. Reference shared memories when it feels natural
-8. NEVER break character or mention you&apos;re an AI
+CONVERSATION TOOLS:
+- GREETINGS: ${greetingWords.join(', ') || 'basic greetings'}
+- QUESTIONS: ${questionWords.join(', ') || 'no questions'}  
+- RESPONSES: ${responseWords.join(', ') || 'basic responses'}
+- FILLERS: ${conversationFillers.join(', ') || 'none'}
+- CONNECTORS: ${connectingWords.join(', ') || 'basic words'}
+- EMOJIS: ${actualEmojis.slice(0, 8).join(' ') || 'no emojis'}
 
-Current message to respond to: "${userMessage}"
+CONVERSATIONAL STYLE:
+- Length preference: ${shortMessages.length > mediumMessages.length ? 'Brief but engaging' : longMessages.length > mediumMessages.length ? 'Longer, detailed responses' : 'Medium conversational length'}
+- Capitalization: ${hasNoCapitals ? 'Casual lowercase style' : 'Standard capitalization'}
+- Punctuation: ${hasPunctuation ? 'Uses punctuation for flow' : 'Minimal punctuation, casual style'}
+- Text style: ${hasAbbreviations ? 'Uses abbreviations like u, ur, thx' : 'Spells words out'}
 
-Respond exactly as ${profile.name} would in WhatsApp:`;
+BE CONVERSATIONAL:
+1. Engage with what they said - show interest and ask follow-up questions
+2. Use their natural phrases and conversation flow
+3. Add their filler words to make it sound natural
+4. Sometimes ask questions back to keep conversation going
+5. React genuinely to what they share using their vocabulary
+6. Use connecting words to make responses flow better
+7. Match their energy level and conversation style
+8. Vary response length based on the context and their style
+9. Be warm and personal like they would be
+
+CONVERSATION EXAMPLES:
+- If they greet: Greet back warmly and maybe ask how they are
+- If they ask how you are: Answer and ask them back
+- If they share news: React with their words and ask follow-up
+- If they ask a question: Answer and continue the conversation
+
+Make it feel like a real conversation with ${profile.name}, not just single-word responses!
+
+USER MESSAGE: "${userMessage}"
+
+Respond conversationally as ${profile.name} would:`;
 
     return prompt;
   };

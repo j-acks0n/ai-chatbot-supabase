@@ -1,6 +1,13 @@
 'use client';
 
-import { Heart, ArrowLeft, Send, Clock, AlertTriangle } from 'lucide-react';
+import {
+  Heart,
+  ArrowLeft,
+  Send,
+  Clock,
+  AlertTriangle,
+  User,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 
@@ -117,83 +124,219 @@ export function TimedMemoryChat({
   const createPersonalizedPrompt = (userMessage: string) => {
     const profile = session.memory_profiles;
 
-    // Sample diverse training messages for better context
-    const recentMessages = trainingMessages
-      .slice(-15) // Last 15 messages for recent context
-      .map((msg) => `"${msg.content}"`)
-      .join('\n');
+    // Calculate actual average message length from training data
+    const actualAverageLength = Math.round(
+      trainingMessages.reduce((sum, msg) => sum + msg.content.length, 0) /
+        trainingMessages.length
+    );
 
-    const earlierMessages = trainingMessages
-      .slice(0, 10) // First 10 messages for early style
-      .map((msg) => `"${msg.content}"`)
-      .join('\n');
+    // Extract actual vocabulary and phrases from their messages
+    const allMessages = trainingMessages.map((msg) => msg.content);
+    const allText = allMessages.join(' ').toLowerCase();
 
-    // Create a detailed prompt that captures specific communication style
-    const prompt = `You are ${profile.name}, engaging in a WhatsApp-style conversation. You must EXACTLY mimic their communication style from the uploaded chat history.
+    // Extract their actual vocabulary (words they actually use)
+    const actualWords = [
+      ...new Set(
+        allText
+          .split(/\s+/)
+          .filter((word) => word.length > 0 && /^[a-zA-Z0-9']+$/.test(word))
+      ),
+    ];
 
-IDENTITY:
-- Name: ${profile.name}
-- Relationship: ${profile.relationship || 'loved one'}
-- Description: ${profile.description || 'A cherished person'}
+    // Extract their actual emojis used
+    const emojiRegex =
+      /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+    const actualEmojis = [...new Set(allText.match(emojiRegex) || [])];
 
-CRITICAL STYLE GUIDELINES - FOLLOW EXACTLY:
+    // Find common conversational phrases (2-4 words) they actually use
+    const commonPhrases: string[] = [];
+    for (let msg of allMessages) {
+      const words = msg.toLowerCase().split(/\s+/);
+      // Look for 2-word phrases
+      for (let i = 0; i < words.length - 1; i++) {
+        const phrase = words.slice(i, i + 2).join(' ');
+        if (phrase.length > 3 && phrase.length < 20) {
+          commonPhrases.push(phrase);
+        }
+      }
+      // Look for 3-word phrases
+      for (let i = 0; i < words.length - 2; i++) {
+        const phrase = words.slice(i, i + 3).join(' ');
+        if (phrase.length > 5 && phrase.length < 25) {
+          commonPhrases.push(phrase);
+        }
+      }
+    }
+    const uniquePhrases = [...new Set(commonPhrases)]
+      .filter((phrase) => commonPhrases.filter((p) => p === phrase).length >= 1)
+      .slice(0, 20);
 
-MESSAGE LENGTH:
-- Keep responses around ${profile.average_message_length || 50} characters
-- ${profile.response_style?.includes('gives short responses') ? 'Prefer very brief responses' : ''}
-- ${profile.response_style?.includes('gives detailed responses') ? 'You can write longer, detailed messages when appropriate' : ''}
+    // Find conversational elements they use
+    const greetingWords = actualWords.filter((word) =>
+      [
+        'hey',
+        'hi',
+        'hello',
+        'sup',
+        'yo',
+        'morning',
+        'evening',
+        'good',
+      ].includes(word.toLowerCase())
+    );
 
-PUNCTUATION STYLE:
-${profile.punctuation_style?.map((style) => `- ${style.charAt(0).toUpperCase() + style.slice(1)}`).join('\n') || '- Use normal punctuation'}
+    const questionWords = actualWords.filter((word) =>
+      [
+        'how',
+        'what',
+        'where',
+        'when',
+        'why',
+        'who',
+        'are',
+        'do',
+        'did',
+        'can',
+        'will',
+        'have',
+        'would',
+        'could',
+        'should',
+      ].includes(word.toLowerCase())
+    );
 
-CAPITALIZATION:
-- Writing style: ${profile.capitalization_style || 'mixed case'}
-${profile.capitalization_style === 'mostly lowercase' ? '- Write mostly in lowercase, avoid capitals except when really emphasizing' : ''}
-${profile.capitalization_style === 'frequent capitals' ? '- Use capitals frequently for emphasis' : ''}
+    const responseWords = actualWords.filter((word) =>
+      [
+        'yes',
+        'no',
+        'yeah',
+        'nah',
+        'ok',
+        'okay',
+        'sure',
+        'maybe',
+        'good',
+        'bad',
+        'fine',
+        'great',
+        'nice',
+        'cool',
+        'awesome',
+        'right',
+        'true',
+        'exactly',
+      ].includes(word.toLowerCase())
+    );
 
-TYPICAL EXPRESSIONS:
-${profile.typical_phrases?.length ? profile.typical_phrases.map((phrase) => `- Often say: "${phrase}"`).join('\n') : '- Use natural expressions'}
+    const conversationFillers = actualWords.filter((word) =>
+      [
+        'like',
+        'just',
+        'really',
+        'pretty',
+        'very',
+        'so',
+        'too',
+        'well',
+        'now',
+        'then',
+        'also',
+        'actually',
+        'probably',
+        'maybe',
+        'definitely',
+      ].includes(word.toLowerCase())
+    );
 
-GREETING STYLE:
-${profile.greeting_patterns?.length ? `- Greetings you use: ${profile.greeting_patterns.join(', ')}` : '- Use casual greetings'}
+    const connectingWords = actualWords.filter((word) =>
+      [
+        'and',
+        'but',
+        'or',
+        'because',
+        'since',
+        'while',
+        'though',
+        'although',
+        'if',
+        'when',
+        'where',
+        'that',
+        'which',
+      ].includes(word.toLowerCase())
+    );
 
-FAREWELL STYLE:
-${profile.farewell_patterns?.length ? `- Farewells you use: ${profile.farewell_patterns.join(', ')}` : '- Use casual farewells'}
+    // Analyze their conversation style
+    const messageLengths = allMessages.map((msg) => msg.length);
+    const shortMessages = messageLengths.filter((len) => len <= 20);
+    const mediumMessages = messageLengths.filter(
+      (len) => len > 20 && len <= 50
+    );
+    const longMessages = messageLengths.filter((len) => len > 50);
 
-QUESTION PATTERNS:
-${profile.question_style?.length ? profile.question_style.map((style) => `- ${style}`).join('\n') : '- Ask questions naturally'}
+    const lowercaseMessages = allMessages.filter(
+      (msg) => msg === msg.toLowerCase()
+    );
+    const hasNoCapitals = lowercaseMessages.length > allMessages.length * 0.5;
 
-EMOTICONS & EMOJIS:
-${profile.emoticons_used?.length ? `- Your favorite emojis: ${profile.emoticons_used.slice(0, 8).join(' ')}` : '- Use emojis sparingly'}
-${profile.communication_patterns?.includes('uses many emojis') ? '- Use emojis frequently in your messages' : ''}
+    const noPunctuationMessages = allMessages.filter(
+      (msg) => !/[.!?]/.test(msg)
+    );
+    const hasPunctuation =
+      noPunctuationMessages.length < allMessages.length * 0.5;
 
-COMMUNICATION PATTERNS:
-${profile.communication_patterns?.map((pattern) => `- ${pattern.charAt(0).toUpperCase() + pattern.slice(1)}`).join('\n') || ''}
+    const hasAbbreviations =
+      allText.includes(' u ') ||
+      allText.includes(' ur ') ||
+      allText.includes(' thx ');
 
-RESPONSE TIMING:
-${profile.message_timing?.length ? profile.message_timing.map((timing) => `- ${timing.charAt(0).toUpperCase() + timing.slice(1)}`).join('\n') : ''}
+    // Create a conversational prompt that encourages natural flow
+    const prompt = `You are ${profile.name} having a real conversation. Be natural, engaging, and conversational using ONLY their actual words.
 
-EXAMPLES OF YOUR ACTUAL MESSAGES:
+USER SAID: "${userMessage}"
 
-Recent messages:
-${recentMessages}
+YOUR CONVERSATION VOCABULARY:
+${actualWords.slice(0, 100).join(', ')}
 
-Earlier messages:
-${earlierMessages}
+YOUR NATURAL PHRASES (use these for flow):
+${uniquePhrases.slice(0, 15).join(', ') || 'combine words naturally'}
 
-CRITICAL INSTRUCTIONS:
-1. Study the examples above and mimic the EXACT writing style, tone, and patterns
-2. Use the same punctuation, capitalization, and emoji patterns shown
-3. Match the typical message length (${profile.average_message_length || 50} characters)
-4. Include your characteristic phrases and expressions naturally
-5. Be warm and genuine - this person misses you deeply
-6. Stay completely in character as ${profile.name}
-7. Reference shared memories when it feels natural
-8. NEVER break character or mention you&apos;re an AI
+CONVERSATION TOOLS:
+- GREETINGS: ${greetingWords.join(', ') || 'basic greetings'}
+- QUESTIONS: ${questionWords.join(', ') || 'no questions'}  
+- RESPONSES: ${responseWords.join(', ') || 'basic responses'}
+- FILLERS: ${conversationFillers.join(', ') || 'none'}
+- CONNECTORS: ${connectingWords.join(', ') || 'basic words'}
+- EMOJIS: ${actualEmojis.slice(0, 8).join(' ') || 'no emojis'}
 
-Current message to respond to: "${userMessage}"
+CONVERSATIONAL STYLE:
+- Length preference: ${shortMessages.length > mediumMessages.length ? 'Brief but engaging' : longMessages.length > mediumMessages.length ? 'Longer, detailed responses' : 'Medium conversational length'}
+- Capitalization: ${hasNoCapitals ? 'Casual lowercase style' : 'Standard capitalization'}
+- Punctuation: ${hasPunctuation ? 'Uses punctuation for flow' : 'Minimal punctuation, casual style'}
+- Text style: ${hasAbbreviations ? 'Uses abbreviations like u, ur, thx' : 'Spells words out'}
 
-Respond exactly as ${profile.name} would in WhatsApp:`;
+BE CONVERSATIONAL:
+1. Engage with what they said - show interest and ask follow-up questions
+2. Use their natural phrases and conversation flow
+3. Add their filler words to make it sound natural
+4. Sometimes ask questions back to keep conversation going
+5. React genuinely to what they share using their vocabulary
+6. Use connecting words to make responses flow better
+7. Match their energy level and conversation style
+8. Vary response length based on the context and their style
+9. Be warm and personal like they would be
+
+CONVERSATION EXAMPLES:
+- If they greet: Greet back warmly and maybe ask how they are
+- If they ask how you are: Answer and ask them back
+- If they share news: React with their words and ask follow-up
+- If they ask a question: Answer and continue the conversation
+
+Make it feel like a real conversation with ${profile.name}, not just single-word responses!
+
+USER MESSAGE: "${userMessage}"
+
+Respond conversationally as ${profile.name} would:`;
 
     return prompt;
   };
@@ -215,6 +358,10 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
     setMessages((prev) => [...prev, userMsg]);
 
     try {
+      // Calculate expected response length based on person's style
+      const expectedLength =
+        session.memory_profiles.average_message_length || 50;
+
       // Generate AI response with personalized prompt
       const response = await fetch('/api/memory-chat', {
         method: 'POST',
@@ -231,17 +378,31 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
 
       const data = await response.json();
 
+      // Validate response length and authenticity
+      let finalResponse = data.response;
+      if (finalResponse.length > expectedLength * 2) {
+        console.warn("Response too long, truncating to match person's style");
+        const truncated = finalResponse.substring(0, expectedLength * 1.5);
+        const lastPeriod = truncated.lastIndexOf('.');
+        finalResponse =
+          lastPeriod > 0 ? truncated.substring(0, lastPeriod + 1) : truncated;
+      }
+
       // Add AI response to local state
       const assistantMsg = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response,
+        content: finalResponse,
         created_at: new Date().toISOString(),
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove the user message if there was an error
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== Date.now().toString())
+      );
     } finally {
       setIsLoading(false);
     }
@@ -263,29 +424,49 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
 
   if (isSessionExpired) {
     return (
-      <div className="flex flex-col h-screen">
-        <div className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="text-center p-6">
-              <AlertTriangle className="size-16 mx-auto mb-4 text-orange-500" />
-              <h2 className="text-xl font-bold mb-2">Session Ended</h2>
-              <p className="text-gray-600 mb-4">
-                Your 10-minute session has ended. You can start a new session
-                next month.
-              </p>
-              <p className="text-sm text-gray-500">Redirecting you back...</p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto border-0 shadow-xl ring-1 ring-gray-200/50">
+          <CardContent className="text-center p-8">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              Session Complete
+            </h2>
+            <p className="text-gray-600 mb-4 leading-relaxed">
+              Your 10-minute conversation with {session.memory_profiles.name}{' '}
+              has ended.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Take time to reflect on your conversation. You can start a new
+              session next month.
+            </p>
+            <div className="w-8 h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mx-auto mb-4" />
+            <p className="text-xs text-gray-500">Redirecting you back...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  const timerColor =
+    timeRemaining <= 60
+      ? 'text-red-500'
+      : timeRemaining <= 120
+        ? 'text-orange-500'
+        : 'text-purple-600';
+  const timerBgColor =
+    timeRemaining <= 60
+      ? 'bg-red-50 border-red-200'
+      : timeRemaining <= 120
+        ? 'bg-orange-50 border-orange-200'
+        : 'bg-purple-50 border-purple-200';
+
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       {/* Header with Timer */}
-      <Card className="rounded-none border-x-0 border-t-0">
-        <CardHeader className="pb-3">
+      <Card className="rounded-none border-x-0 border-t-0 shadow-sm bg-white/80 backdrop-blur-sm">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -293,54 +474,66 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
               onClick={() =>
                 router.push(`/memories/${session.memory_profile_id}`)
               }
-              className="mr-4"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             >
-              <ArrowLeft className="size-4 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-2" />
               End Session
             </Button>
-            <CardTitle className="flex items-center space-x-2 text-lg">
-              <Heart className="size-5 text-red-500" />
-              <span>{session.memory_profiles.name}</span>
-            </CardTitle>
-            <div className="flex items-center space-x-2">
-              <Clock
-                className={`size-4 ${timeRemaining <= 60 ? 'text-red-500' : 'text-purple-600'}`}
-              />
-              <span
-                className={`font-mono text-sm ${timeRemaining <= 60 ? 'text-red-500 font-bold' : 'text-purple-600'}`}
-              >
+
+            <div className="text-center">
+              <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-900">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <Heart className="w-4 h-4 text-purple-600" />
+                </div>
+                <span>{session.memory_profiles.name}</span>
+              </CardTitle>
+              {session.memory_profiles.relationship && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Your {session.memory_profiles.relationship}
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`flex items-center space-x-2 px-3 py-2 rounded-full ${timerBgColor} border`}
+            >
+              <Clock className={`w-4 h-4 ${timerColor}`} />
+              <span className={`font-mono text-sm font-medium ${timerColor}`}>
                 {formatTime(timeRemaining)}
               </span>
             </div>
           </div>
-          {session.memory_profiles.relationship && (
-            <p className="text-sm text-gray-500 text-center">
-              Your {session.memory_profiles.relationship}
-            </p>
-          )}
+
           {timeRemaining <= 120 && (
-            <div className="mt-2 p-2 bg-orange-50 rounded-lg border border-orange-200">
-              <p className="text-xs text-orange-700 text-center">
-                {timeRemaining <= 60
-                  ? 'Session ending soon!'
-                  : 'Less than 2 minutes remaining'}
-              </p>
+            <div className={`mt-3 p-3 rounded-lg ${timerBgColor} border`}>
+              <div className="flex items-center justify-center space-x-2">
+                <AlertTriangle className={`w-4 h-4 ${timerColor}`} />
+                <p className={`text-sm font-medium ${timerColor}`}>
+                  {timeRemaining <= 60
+                    ? 'Session ending soon!'
+                    : 'Less than 2 minutes remaining'}
+                </p>
+              </div>
             </div>
           )}
         </CardHeader>
       </Card>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <Heart className="size-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">
-              Your session with {session.memory_profiles.name} has started
+          <div className="text-center py-16">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+              <User className="w-8 h-8 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Connected with {session.memory_profiles.name}
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Your session has started. You have {formatTime(timeRemaining)} to
+              chat together.
             </p>
-            <p className="text-sm">
-              You have {formatTime(timeRemaining)} to chat together.
-            </p>
+            <div className="w-12 h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mx-auto" />
           </div>
         ) : (
           messages.map((message) => (
@@ -348,18 +541,20 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
               key={message.id}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-900'
-                }`}
-              >
-                <p className="text-sm">{message.content}</p>
-                <p
-                  className={`text-xs mt-1 ${
+              <div className="max-w-xs lg:max-w-md">
+                <div
+                  className={`px-4 py-3 rounded-2xl shadow-sm ${
                     message.role === 'user'
-                      ? 'text-purple-200'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                      : 'bg-white border border-gray-200 text-gray-900'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                </div>
+                <p
+                  className={`text-xs mt-1 px-2 ${
+                    message.role === 'user'
+                      ? 'text-purple-600'
                       : 'text-gray-500'
                   }`}
                 >
@@ -371,17 +566,19 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
         )}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-900 max-w-xs lg:max-w-md px-4 py-2 rounded-lg">
-              <div className="flex space-x-1">
-                <div className="size-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="size-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.1s' }}
-                ></div>
-                <div
-                  className="size-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.2s' }}
-                ></div>
+            <div className="max-w-xs lg:max-w-md">
+              <div className="bg-white border border-gray-200 px-4 py-3 rounded-2xl shadow-sm">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: '0.1s' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
@@ -390,23 +587,23 @@ Respond exactly as ${profile.name} would in WhatsApp:`;
       </div>
 
       {/* Input */}
-      <Card className="rounded-none border-x-0 border-b-0">
+      <Card className="rounded-none border-x-0 border-b-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="flex space-x-2">
+          <div className="flex space-x-3">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={`Message ${session.memory_profiles.name}...`}
               disabled={isLoading || isSessionExpired}
-              className="flex-1"
+              className="flex-1 h-12 rounded-full border-gray-300 focus:border-purple-500 focus:ring-purple-500/20"
             />
             <Button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading || isSessionExpired}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              <Send className="size-4" />
+              <Send className="w-4 h-4" />
             </Button>
           </div>
         </CardContent>
